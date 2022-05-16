@@ -20,6 +20,22 @@ log = logging.getLogger("locker2dict")
 #log.setLevel(logging.DEBUG)
 log.setLevel(logging.INFO)
 
+def coerce_type(key, value):
+    if value == 'null':
+        return None
+    elif key.startswith('is_') or key in ('companion_required'):
+        # assume bool:
+        if value == '0':
+            return False
+        elif value == '1':
+            return True
+        else:
+            raise NotImplementedError('Bool %r = %r' % (key, value))
+    elif key in ('locker_order'):
+        return int(value)
+    else:
+        return value
+
 def file2dict(f):
     # read in from file object `f` returning a dict of contents
     # where `f` is being read from a locker.log from inside of a pebble.log.gz (which is a zip file with misleading file name)
@@ -40,12 +56,14 @@ def file2dict(f):
             #key = temp_dict['locker_order']  # can't use - there are many locker_order=0 entries
             key = temp_dict['_id']
             assert key not in entries, key
-            temp_dict['platform_dependent_data'] = json.loads(temp_dict['platform_dependent_data'])
+            if temp_dict['platform_dependent_data']:
+                temp_dict['platform_dependent_data'] = json.loads(temp_dict['platform_dependent_data'])
             entries[key] = temp_dict
         else:
             if reading_entry:
                 log.debug('reading_entry %r', line)
-                key, value = line.split('=', 1)
+                key, value = line.split('=', 1)  # NOTE all entries are string; key and value (even "null", zero, one, etc.)
+                value = coerce_type(key, value)
                 temp_dict[key] = value
     return entries
 
