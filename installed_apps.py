@@ -7,6 +7,7 @@
 dump out web pages of installed apps and watch faces
 """
 
+import bisect
 import json
 import logging
 import os
@@ -46,9 +47,10 @@ def main(argv=None):
         ):
         """
         if not entry['is_system_app']:
+            """
             print(entry['uuid'])
             print(entry['type'])
-            print(entry['title'])  #    Special cases title='UNSUPPORTED WATCHFACES' and title='NOT ON WATCH'
+            #print(entry['title'])  #    Special cases title='UNSUPPORTED WATCHFACES' and title='NOT ON WATCH'
             print(entry['version'])
             print(entry['developer_name'])
             print(entry['share'])
@@ -58,8 +60,9 @@ def main(argv=None):
             print(entry['locker_order'])
             print(entry['companion_required'])
             print(entry['companion_url'])
+            """
             platform_dependent_data = entry['platform_dependent_data']
-            print(platform_dependent_data)
+            #print(platform_dependent_data)
             supported_platform_dependent_data = {}
             for index_offset, platform_dependent_entry in enumerate(platform_dependent_data):
                 if platform_dependent_entry['supported']:
@@ -81,11 +84,16 @@ def main(argv=None):
                     print(platform_dependent_entry['description'])
             """
             #print(entry)
-            all_apps[entry['type']].append(entry)  # # TODO some sort of sort operation, or just shove the whole thing into a sqlite3 db/table
-    #print(json.dumps(all_apps, indent=4))
+            #all_apps[entry['type']].append(entry)  # # TODO some sort of sort operation, or just shove the whole thing into a sqlite3 db/table
+            bisect.insort_left(all_apps[entry['type']], entry, key=lambda x: x['locker_order'] or -1)  # NOTE "key" support in bisect.insort requires Python 3.10 (or a backport?)
+
+    print(json.dumps(all_apps, indent=4))
+    #print(json.dumps(all_apps, indent=4).encode('utf-8'))
     print('-' * 65)
 
     data = all_apps
+    # TODO uuid
+    # TODO url with pbw download option
     template = u"""
 <h2>Apps</h2>
 {{#watchapp}}
@@ -132,7 +140,7 @@ def main(argv=None):
 {{/watchface}}
 """
     result = stache.render(template, data)
-    print(repr(result))
+    #print(repr(result))
     outf = open('out.html' ,'wb')
     outf.write(result.encode('utf-8'))
     outf.close()
