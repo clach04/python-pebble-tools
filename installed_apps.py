@@ -7,7 +7,7 @@
 dump out web pages of installed apps and watch faces
 """
 
-import bisect
+import bisect  # TODO consider using https://github.com/grantjenks/python-sortedcontainers instead, py3 and py2 API is the same
 import json
 import logging
 import os
